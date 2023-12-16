@@ -3,9 +3,13 @@ import os
 import base64
 from requests import post, get
 import json
+from spotipy.oauth2 import SpotifyOAuth
 
 load_dotenv()
 
+
+#find your spotify username at https://www.spotify.com/us/account/profile/
+username = "22yq5rndcy2vf45jbyk3tv46a"
 client_id = os.getenv("CLIENT_ID")
 client_secret = os.getenv("CLIENT_SECRET")
 
@@ -54,11 +58,51 @@ def get_songs_by_artist(token, artist_id):
     json_result = json.loads(result.content)["tracks"]
     return json_result
 
+
+
+
+
+
 #print(token)
 token = get_token()
 result = search_for_artist(token, "ACDC")
 artist_id = result["id"]
 songs = get_songs_by_artist(token, artist_id)
-
+track_uris = []
 for idx, song in enumerate(songs):
+    track_uris.append(song['uri'])
     print(f"{idx + 1}. {song['name']}")
+
+
+
+def create_playlist(token, username, playlist_name):
+    url = f"https://api.spotify.com/v1/users/{username}/playlists"
+    headers = get_auth_header(token)
+    data = {
+        "name": playlist_name,
+        "public": True  # Set to True for a public playlist, or False for a private one
+    }
+    result = post(url, headers=headers, data=json.dumps(data))
+    json_result = json.loads(result.content)
+    print(json_result)
+    playlist_id = json_result["id"]
+    return playlist_id
+
+def add_tracks_to_playlist(token, username, playlist_id, track_uris):
+    url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
+    headers = get_auth_header(token)
+    data = {
+        "uris": track_uris
+    }
+    result = post(url, headers=headers, data=json.dumps(data))
+    if result.status_code == 201:
+        print("Tracks added to the playlist successfully")
+    else:
+        print("Failed to add tracks to the playlist")
+
+# Create a playlist
+playlist_name = "Python Playlist"
+playlist_id = create_playlist(token, username, playlist_name)
+
+# Add tracks to the playlist
+add_tracks_to_playlist(token, username, playlist_id, track_uris)

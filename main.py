@@ -5,8 +5,19 @@ from requests import post, get
 import json
 from spotipy.oauth2 import SpotifyOAuth
 import spotipy
+import streamlit as st
 
 load_dotenv()
+st.set_page_config(
+
+    page_title='Spotify BPM Playlist Maker',
+
+    page_icon='🎵',
+
+    layout='wide'
+
+)
+st.title('This is a title')
 
 
 # find your spotify username at https://www.spotify.com/us/account/profile/

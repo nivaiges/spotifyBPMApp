@@ -7,18 +7,13 @@ from spotipy.oauth2 import SpotifyOAuth
 import spotipy
 import streamlit as st
 
+
 load_dotenv()
 st.set_page_config(
-
     page_title='Spotify BPM Playlist Maker',
-
     page_icon='🎵',
-
     layout='wide'
-
 )
-st.title('This is a title')
-
 
 # find your spotify username at https://www.spotify.com/us/account/profile/
 username = "22yq5rndcy2vf45jbyk3tv46a"
@@ -51,6 +46,24 @@ token = get_token()
 
 def get_auth_header(token):
     return {"Authorization": "Bearer " + token}
+
+
+def genre_List():
+    url = f"https://api.spotify.com/v1/recommendations/available-genre-seeds"
+    headers = get_auth_header(token)
+    result = get(url, headers=headers)
+    json_result = json.loads(result.content)["genres"]
+    return json_result
+
+
+genreListObj = genre_List()
+# print(genreListObj)
+st.title('This is a title')
+options = st.multiselect('Select playlist genres:', genreListObj)
+playlistName = st.text_input(label="Name You want your playlist to be Called",
+                             max_chars=100, placeholder="A Python Playlist")
+min_Input = round(st.number_input(label='Min BPM', min_value=0), 2)
+max_Input = round(st.number_input(label='Max BPM', min_value=0), 2)
 
 
 def search_for_artist(token, artist_name):
@@ -110,7 +123,7 @@ for idx, item in enumerate(results['items']):
     # print(idx, track['artists'][0]['name'], " – ", track['name'])
 
 
-def user_playlist_create(user_id, playlistName, public=False, collaborative=False, description='A Test Python Playlist'):
+def user_playlist_create(user_id, playlistName, public=False, collaborative=False, description="A Python Playlist"):
 
     playlist = sp.user_playlist_create(
         user=user_id,
@@ -141,24 +154,36 @@ def get_recommendations_with_bpm(seed_genres, min_bpm, max_bpm, market, limit=20
             market=market,
             limit=limit
         )
-        url = f"https://api.spotify.com/v1/recommendations?{recommendations}"
-        return recommendations
+        track_uri = [track[uri] for track in recommendations['tracks']]
+        return track_uri
 
     except Exception as e:
         print(f"An error occurred: {e}")
         return None
 
 
-# Usage example:
-min_bpm = 50  # Minimum BPM for recommendations
-max_bpm = 200  # Maximum BPM for recommendations
-recommended_tracks = get_recommendations_with_bpm(
-    "soul", min_bpm, max_bpm, "ES", limit=10)
+def makeUserPlaylist(genres, minTempo, maxTempo, country):
+    get_recommendations_with_bpm(genres, minTempo, maxTempo, "ES")
+    newPlaylist = user_playlist_create(user_id, playlistName, False, False,
+                                       description=f"A Playlist with songs having a bpm range of {minTempo} to {maxTempo}")
+    if track_uris:
+        # Add the recommended tracks to the user's playlist
+        sp.playlist_add_items(newPlaylist['id'], track_uris)
+        return f"Playlist '{playlistName}' created with {len(track_uris)} tracks."
+    else:
+        return "No tracks were found."
 
-if recommended_tracks:
+
+if st.button(label="Go"):
+    makeUserPlaylist(options, min_Input, max_Input, "ES")
+
+
+# recommended_tracks = get_recommendations_with_bpm("soul", min_bpm, max_bpm, "ES", limit=10)
+
+"""if recommended_tracks:
     print("Recommended Tracks:")
     for track in recommended_tracks['tracks']:
-        print(f"{track['name']} by {track['artists'][0]['name']}")
+        print(f"{track['name']} by {track['artists'][0]['name']}")"""
 
 
 # lookup = get_recommendations_with_bpm(120, 150, 20)
